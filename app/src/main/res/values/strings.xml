@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">SmartTranslator</string>
+    <string name="translatedTextValue">Click Voice Button to start translation of word</string>
+    <string name="microphone_button">Microphone Button</string>
 </resources>
