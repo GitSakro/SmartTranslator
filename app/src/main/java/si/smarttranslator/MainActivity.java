@@ -52,13 +52,7 @@ public class MainActivity extends AppCompatActivity {
 
         readLabelsFromFile();
 
-        recognizeCommands = new RecognizeCommands(
-                                labels,
-                                VoiceRecognizionSettings.AVERAGE_WINDOW_DURATION_MS,
-                                VoiceRecognizionSettings.DETECTION_THRESHOLD,
-                                VoiceRecognizionSettings.SUPPRESSION_MS,
-                                VoiceRecognizionSettings.MINIMUM_COUNT,
-                                VoiceRecognizionSettings.MINIMUM_TIME_BETWEEN_SAMPLES_MS);
+        recognizeCommands = new RecognizeCommands(labels);
 
         // Load the TensorFlow model.
         inferenceInterface = new TensorFlowInferenceInterface(getAssets(), VoiceRecognizionSettings.MODEL_FILENAME);

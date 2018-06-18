@@ -12,12 +12,6 @@ import java.util.List;
 public class RecognizeCommands {
     // Configuration settings.
     private List<String> labels;
-    private long averageWindowDurationMs;
-    private float detectionThreshold;
-    private int suppressionMs;
-    private int minimumCount;
-    private long minimumTimeBetweenSamplesMs;
-
     // Working variables.
     private Deque<Pair<Long, float[]>> previousResults = new ArrayDeque<>();
     private String previousTopLabel;
@@ -25,23 +19,13 @@ public class RecognizeCommands {
     private long previousTopLabelTime;
     private float previousTopLabelScore;
 
-    public RecognizeCommands(
-            List<String> inLabels,
-            long inAverageWindowDurationMs,
-            float inDetectionThreshold,
-            int inSuppressionMS,
-            int inMinimumCount,
-            long inMinimumTimeBetweenSamplesMS) {
+    public RecognizeCommands(List<String> inLabels) 
+    {
         labels = inLabels;
-        averageWindowDurationMs = inAverageWindowDurationMs;
-        detectionThreshold = inDetectionThreshold;
-        suppressionMs = inSuppressionMS;
-        minimumCount = inMinimumCount;
         labelsCount = inLabels.size();
         previousTopLabel = VoiceRecognizionSettings.SILENCE_LABEL;
         previousTopLabelTime = Long.MIN_VALUE;
         previousTopLabelScore = 0.0f;
-        minimumTimeBetweenSamplesMs = inMinimumTimeBetweenSamplesMS;
     }
 
     /** Holds information about what's been recognized. */
@@ -103,7 +87,7 @@ public class RecognizeCommands {
 
     private boolean isNewCommand(long currentTimeMS, String currentTopLabel, float currentTopScore, long timeSinceLastTop) {
         boolean isNewCommand;
-        if ((currentTopScore > detectionThreshold) && (timeSinceLastTop > suppressionMs)) {
+        if ((currentTopScore > VoiceRecognizionSettings.DETECTION_THRESHOLD) && (timeSinceLastTop > VoiceRecognizionSettings.SUPPRESSION_MS)) {
             previousTopLabel = currentTopLabel;
             previousTopLabelTime = currentTimeMS;
             previousTopLabelScore = currentTopScore;
@@ -150,7 +134,7 @@ public class RecognizeCommands {
     private boolean ignoreTooFrequentResuts(long currentTimeMS, int howManyResults) {
         if (howManyResults > 1) {
             final long timeSinceMostRecent = currentTimeMS - previousResults.getLast().first;
-            if (timeSinceMostRecent < minimumTimeBetweenSamplesMs) {
+            if (timeSinceMostRecent < VoiceRecognizionSettings.MINIMUM_TIME_BETWEEN_SAMPLES_MS) {
                 return true;
             }
         }
@@ -160,8 +144,8 @@ public class RecognizeCommands {
     private boolean isResultUnreliable(long currentTimeMS, int howManyResults) {
         final long earliestTime = previousResults.getFirst().first;
         final long samplesDuration = currentTimeMS - earliestTime;
-        if ((howManyResults < minimumCount)
-                || (samplesDuration < (averageWindowDurationMs / VoiceRecognizionSettings.MINIMUM_TIME_FRACTION))) {
+        if ((howManyResults < VoiceRecognizionSettings.MINIMUM_COUNT)
+                || (samplesDuration < (VoiceRecognizionSettings.AVERAGE_WINDOW_DURATION_MS / VoiceRecognizionSettings.MINIMUM_TIME_FRACTION))) {
             Log.v("RecognizeResult", "Too few results");
             return true;
         }
@@ -169,7 +153,7 @@ public class RecognizeCommands {
     }
 
     private void removeOldResults(long currentTimeMS) {
-        final long timeLimit = currentTimeMS - averageWindowDurationMs;
+        final long timeLimit = currentTimeMS - VoiceRecognizionSettings.AVERAGE_WINDOW_DURATION_MS;
         while (previousResults.getFirst().first < timeLimit) {
             previousResults.removeFirst();
         }
