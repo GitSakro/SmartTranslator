@@ -1,7 +1,5 @@
 package si.smarttranslator;
 
-import android.animation.AnimatorInflater;
-import android.animation.AnimatorSet;
 import android.annotation.SuppressLint;
 import android.media.AudioFormat;
 import android.media.AudioRecord;
@@ -12,7 +10,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.ImageButton;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
@@ -27,30 +24,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MainActivity extends AppCompatActivity {
 
-    // Constants that control the behavior of the recognition code and model
-    // settings. See the audio recognition tutorial for a detailed explanation of
-    // all these, but you should customize them to match your training settings if
-    // you are running your own model.
-    private static final int SAMPLE_RATE = 16000;
-    private static final int SAMPLE_DURATION_MS = 1000;
-    private static final int RECORDING_LENGTH = (int) (SAMPLE_RATE * SAMPLE_DURATION_MS / 1000);
-    private static final long AVERAGE_WINDOW_DURATION_MS = 500;
-    private static final float DETECTION_THRESHOLD = 0.70f;
-    private static final int SUPPRESSION_MS = 1500;
-    private static final int MINIMUM_COUNT = 3;
-    private static final long MINIMUM_TIME_BETWEEN_SAMPLES_MS = 30;
-    private static final String LABEL_FILENAME = "file:///android_asset/labels.txt";
-    private static final String MODEL_FILENAME = "file:///android_asset/my_frozen_graph.pb";
-    private static final String INPUT_DATA_NAME = "decoded_sample_data:0";
-    private static final String SAMPLE_RATE_NAME = "decoded_sample_data:1";
-    private static final String OUTPUT_SCORES_NAME = "labels_softmax";
-
-    // UI elements.
-    private static final int REQUEST_RECORD_AUDIO = 13;
     private static final String LOG_TAG = MainActivity.class.getSimpleName();
 
     // Working variables.
-    short[] recordingBuffer = new short[RECORDING_LENGTH];
+    short[] recordingBuffer = new short[VoiceRecognizionSettings.RECORDING_LENGTH];
     int recordingOffset = 0;
     boolean shouldContinue = true;
     private Thread recordingThread;
@@ -62,7 +39,7 @@ public class MainActivity extends AppCompatActivity {
     private List<String> displayedLabels = new ArrayList<>();
     private RecognizeCommands recognizeCommands = null;
 
-    ImageButton micButton;
+    private ImageButton micButton;
 
 
     @SuppressLint("ClickableViewAccessibility")
@@ -70,26 +47,30 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        micButton = this.findViewById(R.id.microphoneSwitcher);
 
-        micButton.setOnTouchListener(new View.OnTouchListener() {
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-                    micButton.setImageResource(R.drawable.mic_recording);
-                    startRecording();
-                } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    micButton.setImageResource(R.drawable.mic_off);
-                    stopRecording();
-                }
-                return true;
-            }
-        });
-        // Load the labels for the model, but only display those that don't start
-        // with an underscore.
-        String actualFilename = LABEL_FILENAME.split("file:///android_asset/")[1];
+        handleVoiceButton();
+
+        readLabelsFromFile();
+
+        recognizeCommands = new RecognizeCommands(
+                                labels,
+                                VoiceRecognizionSettings.AVERAGE_WINDOW_DURATION_MS,
+                                VoiceRecognizionSettings.DETECTION_THRESHOLD,
+                                VoiceRecognizionSettings.SUPPRESSION_MS,
+                                VoiceRecognizionSettings.MINIMUM_COUNT,
+                                VoiceRecognizionSettings.MINIMUM_TIME_BETWEEN_SAMPLES_MS);
+
+        // Load the TensorFlow model.
+        inferenceInterface = new TensorFlowInferenceInterface(getAssets(), VoiceRecognizionSettings.MODEL_FILENAME);
+
+        // Start the recording and recognition threads.
+        requestMicrophonePermission();
+    }
+
+    private void readLabelsFromFile() {
+        String actualFilename = VoiceRecognizionSettings.LABEL_FILENAME.split("file:///android_asset/")[1];
         Log.i(LOG_TAG, "Reading labels from: " + actualFilename);
-        BufferedReader br = null;
+        BufferedReader br;
         try {
             br = new BufferedReader(new InputStreamReader(getAssets().open(actualFilename)));
             String line;
@@ -103,27 +84,40 @@ public class MainActivity extends AppCompatActivity {
         } catch (IOException e) {
             throw new RuntimeException("Problem reading label file!", e);
         }
+    }
 
-        recognizeCommands =
-                new RecognizeCommands(
-                        labels,
-                        AVERAGE_WINDOW_DURATION_MS,
-                        DETECTION_THRESHOLD,
-                        SUPPRESSION_MS,
-                        MINIMUM_COUNT,
-                        MINIMUM_TIME_BETWEEN_SAMPLES_MS);
+    @SuppressLint("ClickableViewAccessibility")
+    private void handleVoiceButton() {
+        micButton = this.findViewById(R.id.microphoneSwitcher);
+        micButton.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent event) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+                    handleButtonClicked();
+                } else if (event.getAction() == MotionEvent.ACTION_UP) {
+                    handleButtonRealesed();
+                }
+                return true;
+            }
+        });
+    }
 
-        // Load the TensorFlow model.
-        inferenceInterface = new TensorFlowInferenceInterface(getAssets(), MODEL_FILENAME);
+    private void handleButtonRealesed() {
+        micButton.setImageResource(R.drawable.mic_off);
+        stopRecording();
+        stopRecognition();
+    }
 
-        // Start the recording and recognition threads.
-        requestMicrophonePermission();
+    private void handleButtonClicked() {
+        micButton.setImageResource(R.drawable.mic_recording);
+        startRecording();
+        startRecognition();
     }
 
     private void requestMicrophonePermission() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             requestPermissions(
-                    new String[]{android.Manifest.permission.RECORD_AUDIO}, REQUEST_RECORD_AUDIO);
+                    new String[]{android.Manifest.permission.RECORD_AUDIO}, VoiceRecognizionSettings.REQUEST_RECORD_AUDIO);
         }
     }
 
@@ -149,16 +143,16 @@ public class MainActivity extends AppCompatActivity {
         // Estimate the buffer size we'll need for this device.
         int bufferSize =
                 AudioRecord.getMinBufferSize(
-                        SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
+                        VoiceRecognizionSettings.SAMPLE_RATE, AudioFormat.CHANNEL_IN_MONO, AudioFormat.ENCODING_PCM_16BIT);
         if (bufferSize == AudioRecord.ERROR || bufferSize == AudioRecord.ERROR_BAD_VALUE) {
-            bufferSize = SAMPLE_RATE * 2;
+            bufferSize = VoiceRecognizionSettings.SAMPLE_RATE * 2;
         }
         short[] audioBuffer = new short[bufferSize / 2];
 
         AudioRecord record =
                 new AudioRecord(
                         MediaRecorder.AudioSource.DEFAULT,
-                        SAMPLE_RATE,
+                        VoiceRecognizionSettings.SAMPLE_RATE,
                         AudioFormat.CHANNEL_IN_MONO,
                         AudioFormat.ENCODING_PCM_16BIT,
                         bufferSize);
@@ -233,11 +227,11 @@ public class MainActivity extends AppCompatActivity {
     private void recognize() {
         Log.v(LOG_TAG, "Start recognition");
 
-        short[] inputBuffer = new short[RECORDING_LENGTH];
-        float[] floatInputBuffer = new float[RECORDING_LENGTH];
+        short[] inputBuffer = new short[VoiceRecognizionSettings.RECORDING_LENGTH];
+        float[] floatInputBuffer = new float[VoiceRecognizionSettings.RECORDING_LENGTH];
         float[] outputScores = new float[labels.size()];
-        String[] outputScoresNames = new String[]{OUTPUT_SCORES_NAME};
-        int[] sampleRateList = new int[]{SAMPLE_RATE};
+        String[] outputScoresNames = new String[]{VoiceRecognizionSettings.OUTPUT_SCORES_NAME};
+        int[] sampleRateList = new int[]{VoiceRecognizionSettings.SAMPLE_RATE};
 
         // Loop, grabbing recorded data and running the recognition model on it.
         while (shouldContinueRecognition) {
@@ -257,15 +251,15 @@ public class MainActivity extends AppCompatActivity {
 
             // We need to feed in float values between -1.0f and 1.0f, so divide the
             // signed 16-bit inputs.
-            for (int i = 0; i < RECORDING_LENGTH; ++i) {
+            for (int i = 0; i < VoiceRecognizionSettings.RECORDING_LENGTH; ++i) {
                 floatInputBuffer[i] = inputBuffer[i] / 32767.0f;
             }
 
             // Run the model.
-            inferenceInterface.feed(SAMPLE_RATE_NAME, sampleRateList);
-            inferenceInterface.feed(INPUT_DATA_NAME, floatInputBuffer, RECORDING_LENGTH, 1);
+            inferenceInterface.feed(VoiceRecognizionSettings.SAMPLE_RATE_NAME, sampleRateList);
+            inferenceInterface.feed(VoiceRecognizionSettings.INPUT_DATA_NAME, floatInputBuffer, VoiceRecognizionSettings.RECORDING_LENGTH, 1);
             inferenceInterface.run(outputScoresNames);
-            inferenceInterface.fetch(OUTPUT_SCORES_NAME, outputScores);
+            inferenceInterface.fetch(VoiceRecognizionSettings.OUTPUT_SCORES_NAME, outputScores);
 
             // Use the smoother to figure out if we've had a real recognition event.
             long currentTime = System.currentTimeMillis();
@@ -289,7 +283,7 @@ public class MainActivity extends AppCompatActivity {
                     });
             try {
                 // We don't need to run too frequently, so snooze for a bit.
-                Thread.sleep(MINIMUM_TIME_BETWEEN_SAMPLES_MS);
+                Thread.sleep(VoiceRecognizionSettings.MINIMUM_TIME_BETWEEN_SAMPLES_MS);
             } catch (InterruptedException e) {
                 // Ignore
             }
