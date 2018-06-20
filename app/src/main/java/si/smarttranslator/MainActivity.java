@@ -33,6 +33,8 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         // Start the recording and recognition threads.
         requestMicrophonePermission();
+
+
         recorder = new Recorder(LOG_TAG);
 
         // Load the TensorFlow model.
@@ -67,8 +69,8 @@ public class MainActivity extends AppCompatActivity {
 
     private void handleButtonRealesed() {
         micButton.setImageResource(R.drawable.mic_off);
-        recorder.stopRecording();
         recognizer.stopRecognition();
+        recorder.stopRecording();
     }
 
     private void handleButtonClicked() {

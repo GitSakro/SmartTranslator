@@ -98,7 +98,6 @@ public class Recognizer {
                 labels.add(line);
                 if (line.charAt(0) != '_') {
                     displayedLabels.add(line.substring(0, 1).toUpperCase() + line.substring(1));
-                    System.out.println("ezjasar "+ line.substring(0, 1).toUpperCase() + line.substring(1));
                 }
             }
             bufferedReader.close();

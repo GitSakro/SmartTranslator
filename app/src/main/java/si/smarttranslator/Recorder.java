@@ -11,8 +11,6 @@ public class Recorder {
     private Thread recordingThread;
     private boolean shouldContinue = true;
     private String LOG_TAG;
-    // Working variables.
-    private int recordingOffset = 0;
 
     public Recorder(String log_tag) {
         this.LOG_TAG = log_tag;
@@ -48,7 +46,7 @@ public class Recorder {
         // Loop, gathering audio data and copying it to a round-robin buffer.
         while (shouldContinue) {
             SampleData data = gatherData(audioBuffer, record);
-            SharedDataHandler.writeData(audioBuffer,recordingOffset, data);
+            SharedDataHandler.writeData(audioBuffer, data);
         }
         record.stop();
         record.release();
@@ -60,7 +58,7 @@ public class Recorder {
     private SampleData gatherData(short[] audioBuffer, AudioRecord record) {
         int numberRead = record.read(audioBuffer, 0, audioBuffer.length);
         int maxLength = SharedDataHandler.getRecordingBufferLenght();
-        int newRecordingOffset = recordingOffset + numberRead;
+        int newRecordingOffset = SharedDataHandler.getRecordingOffset() + numberRead;
         int secondCopyLength = Math.max(0, newRecordingOffset - maxLength);
         int firstCopyLength = numberRead - secondCopyLength;
         return new SampleData(numberRead,maxLength,newRecordingOffset,secondCopyLength,firstCopyLength);
