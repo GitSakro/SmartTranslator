@@ -1,6 +1,6 @@
 package si.smarttranslator;
 
-public class VoiceRecognizionSettings {
+public class TranslatorValues {
     // Constants that control the behavior of the recognition code and model
     // settings.
     public static final int SAMPLE_RATE = 16000;

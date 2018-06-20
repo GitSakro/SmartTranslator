@@ -23,7 +23,7 @@ public class RecognizeCommands {
     {
         labels = inLabels;
         labelsCount = inLabels.size();
-        previousTopLabel = VoiceRecognizionSettings.SILENCE_LABEL;
+        previousTopLabel = TranslatorValues.SILENCE_LABEL;
         previousTopLabelTime = Long.MIN_VALUE;
         previousTopLabelScore = 0.0f;
     }
@@ -87,7 +87,7 @@ public class RecognizeCommands {
 
     private boolean isNewCommand(long currentTimeMS, String currentTopLabel, float currentTopScore, long timeSinceLastTop) {
         boolean isNewCommand;
-        if ((currentTopScore > VoiceRecognizionSettings.DETECTION_THRESHOLD) && (timeSinceLastTop > VoiceRecognizionSettings.SUPPRESSION_MS)) {
+        if ((currentTopScore > TranslatorValues.DETECTION_THRESHOLD) && (timeSinceLastTop > TranslatorValues.SUPPRESSION_MS)) {
             previousTopLabel = currentTopLabel;
             previousTopLabelTime = currentTimeMS;
             previousTopLabelScore = currentTopScore;
@@ -100,7 +100,7 @@ public class RecognizeCommands {
 
     private long checkRecentLabel(long currentTimeMS) {
         long timeSinceLastTop;
-        if (previousTopLabel.equals(VoiceRecognizionSettings.SILENCE_LABEL) || (previousTopLabelTime == Long.MIN_VALUE)) {
+        if (previousTopLabel.equals(TranslatorValues.SILENCE_LABEL) || (previousTopLabelTime == Long.MIN_VALUE)) {
             timeSinceLastTop = Long.MAX_VALUE;
         } else {
             timeSinceLastTop = currentTimeMS - previousTopLabelTime;
@@ -134,7 +134,7 @@ public class RecognizeCommands {
     private boolean ignoreTooFrequentResuts(long currentTimeMS, int howManyResults) {
         if (howManyResults > 1) {
             final long timeSinceMostRecent = currentTimeMS - previousResults.getLast().first;
-            if (timeSinceMostRecent < VoiceRecognizionSettings.MINIMUM_TIME_BETWEEN_SAMPLES_MS) {
+            if (timeSinceMostRecent < TranslatorValues.MINIMUM_TIME_BETWEEN_SAMPLES_MS) {
                 return true;
             }
         }
@@ -144,8 +144,8 @@ public class RecognizeCommands {
     private boolean isResultUnreliable(long currentTimeMS, int howManyResults) {
         final long earliestTime = previousResults.getFirst().first;
         final long samplesDuration = currentTimeMS - earliestTime;
-        if ((howManyResults < VoiceRecognizionSettings.MINIMUM_COUNT)
-                || (samplesDuration < (VoiceRecognizionSettings.AVERAGE_WINDOW_DURATION_MS / VoiceRecognizionSettings.MINIMUM_TIME_FRACTION))) {
+        if ((howManyResults < TranslatorValues.MINIMUM_COUNT)
+                || (samplesDuration < (TranslatorValues.AVERAGE_WINDOW_DURATION_MS / TranslatorValues.MINIMUM_TIME_FRACTION))) {
             Log.v("RecognizeResult", "Too few results");
             return true;
         }
@@ -153,7 +153,7 @@ public class RecognizeCommands {
     }
 
     private void removeOldResults(long currentTimeMS) {
-        final long timeLimit = currentTimeMS - VoiceRecognizionSettings.AVERAGE_WINDOW_DURATION_MS;
+        final long timeLimit = currentTimeMS - TranslatorValues.AVERAGE_WINDOW_DURATION_MS;
         while (previousResults.getFirst().first < timeLimit) {
             previousResults.removeFirst();
         }
