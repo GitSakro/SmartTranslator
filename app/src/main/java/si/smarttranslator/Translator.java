@@ -16,6 +16,7 @@ public class Translator {
         dictionary.put("stop", "zatrzymaj się");
         dictionary.put("go", "idź");
         dictionary.put("up", "góra");
+        dictionary.put("down", "dół");
     }
 
     public String getTranslation(String word) {

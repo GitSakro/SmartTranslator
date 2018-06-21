@@ -41,7 +41,12 @@ public class Recorder {
         AudioRecord record = createAudioRecord(bufferSize);
         if (record == null) return;
 
-        record.startRecording();
+        try {
+            record.startRecording();
+        } catch (IllegalStateException e){
+            e.printStackTrace();
+            return;
+        }
 
         Log.v(LOG_TAG, "Start recording");
 

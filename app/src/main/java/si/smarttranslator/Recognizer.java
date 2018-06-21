@@ -73,11 +73,16 @@ public class Recognizer {
                 floatInputBuffer[i] = inputBuffer[i] / 32767.0f;
             }
 
-            // Run the model.
-            inferenceInterface.feed(TranslatorValues.SAMPLE_RATE_NAME, sampleRateList);
-            inferenceInterface.feed(TranslatorValues.INPUT_DATA_NAME, floatInputBuffer, TranslatorValues.RECORDING_LENGTH, 1);
-            inferenceInterface.run(outputScoresNames);
-            inferenceInterface.fetch(TranslatorValues.OUTPUT_SCORES_NAME, outputScores);
+            try {
+                // Run the model.
+                inferenceInterface.feed(TranslatorValues.SAMPLE_RATE_NAME, sampleRateList);
+                inferenceInterface.feed(TranslatorValues.INPUT_DATA_NAME, floatInputBuffer, TranslatorValues.RECORDING_LENGTH, 1);
+                inferenceInterface.run(outputScoresNames);
+                inferenceInterface.fetch(TranslatorValues.OUTPUT_SCORES_NAME, outputScores);
+            } catch (RuntimeException ex) {
+                //Can't recognize - just return
+                return;
+            }
 
             // Use the smoother to figure out if we've had a real recognition event.
             long currentTime = System.currentTimeMillis();
@@ -120,15 +125,19 @@ public class Recognizer {
             if (result.equals(TranslatorValues.SILENCE_LABEL)) continue;
             int current = Collections.frequency(results, result);
             if (current > countResults.first) {
+                if(finalResult.first != null) {
+                    countResults = new Pair<>(null, countResults.first);
+                    finalResult = new Pair<>(null, finalResult.first);
+                }
                 countResults = new Pair<>(current, countResults.second);
                 finalResult = new Pair<>(result, finalResult.second);
-            } else if (current > countResults.second) {
+            } else if (current > countResults.second && !finalResult.first.equals(result)) {
                 countResults = new Pair<>(countResults.first, current);
                 finalResult = new Pair<>(finalResult.first, result);
             }
         }
 
-        if(countResults.first - countResults.second >= 3) {
+        if(countResults.first - countResults.second >= countResults.first/2) {
             finalResult = new Pair<>(finalResult.first, null);
         }
 
