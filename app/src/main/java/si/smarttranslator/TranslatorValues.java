@@ -20,4 +20,14 @@ public class TranslatorValues {
     public static final int REQUEST_RECORD_AUDIO = 13;
     static final long MINIMUM_TIME_FRACTION = 4;
     static final String SILENCE_LABEL = "_silence_";
+    static final String COMMAND_UP = "up";
+    static final String COMMAND_DOWN = "down";
+    static final String COMMAND_GO = "go";
+    static final String COMMAND_LEFT = "left";
+    static final String COMMAND_NO = "no";
+    static final String COMMAND_OFF = "off";
+    static final String COMMAND_ON = "on";
+    static final String COMMAND_RIGHT = "right";
+    static final String COMMAND_STOP = "stop";
+    static final String COMMAND_YES = "yes";
 }

@@ -10,6 +10,7 @@ import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
@@ -125,6 +126,7 @@ public class MainActivity extends AppCompatActivity {
                 setTranslation(recognizedText.first);
             }
         } else {
+
             resetTranslation();
         }
     }
@@ -132,6 +134,8 @@ public class MainActivity extends AppCompatActivity {
     private void resetTranslation() {
         textTranslatedField.setText("");
         textRecognizedField.setText("");
+        ImageView imageCommand = this.findViewById(R.id.image_command);
+        imageCommand.setVisibility(View.INVISIBLE);
     }
 
     private void setTranslation(String item) {
@@ -140,6 +144,12 @@ public class MainActivity extends AppCompatActivity {
         System.out.println(translator.getTranslation(item));
         textTranslatedField.setText(translator.getTranslation(item));
 
+        ImageView imageCommand = this.findViewById(R.id.image_command);
+        Integer id = new ImageHelper().getImageName(item);
+        if(id != null) {
+            imageCommand.setVisibility(View.VISIBLE);
+            imageCommand.setImageResource(id);
+        }
     }
 
     private void handleButtonClicked() {
