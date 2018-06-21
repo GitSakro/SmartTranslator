@@ -1,13 +1,18 @@
 package si.smarttranslator;
 
 import android.util.Log;
+import android.util.Pair;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Recognizer {
     private String LOG_TAG;
@@ -17,15 +22,16 @@ public class Recognizer {
     private List<String> labels = new ArrayList<>();
     private TensorFlowInferenceInterface inferenceInterface;
     private RecognizeCommands recognizeCommands;
+    private List<String> results = new ArrayList<>();
 
 
-
-    public Recognizer(String log_tag,BufferedReader bufferedReader,TensorFlowInferenceInterface inferenceInterface) {
+    public Recognizer(String log_tag, BufferedReader bufferedReader, TensorFlowInferenceInterface inferenceInterface) {
         LOG_TAG = log_tag;
         readLabelsFromFile(bufferedReader);
         this.inferenceInterface = inferenceInterface;
         recognizeCommands = new RecognizeCommands(labels);
     }
+
     public synchronized void startRecognition() {
         if (recognitionThread != null) {
             return;
@@ -78,6 +84,7 @@ public class Recognizer {
             final RecognizeCommands.RecognitionResult result =
                     recognizeCommands.processLatestResults(outputScores, currentTime);
             Log.v("ezmajka", result.foundCommand);
+            results.add(result.foundCommand);
             try {
                 // We don't need to run too frequently, so snooze for a bit.
                 Thread.sleep(TranslatorValues.MINIMUM_TIME_BETWEEN_SAMPLES_MS);
@@ -106,8 +113,28 @@ public class Recognizer {
         }
     }
 
+    public Pair<String, String> getResults() {
+        Pair<String, String> finalResult = new Pair<>("", "");
+        Pair<Integer, Integer> countResults = new Pair<>(0, 0);
+        for (String result : results) {
+            if (result.equals(TranslatorValues.SILENCE_LABEL)) continue;
+            int current = Collections.frequency(results, result);
+            if (current > countResults.first) {
+                countResults = new Pair<>(current, countResults.second);
+                finalResult = new Pair<>(result, finalResult.second);
+            } else if (current > countResults.second) {
+                countResults = new Pair<>(countResults.first, current);
+                finalResult = new Pair<>(finalResult.first, result);
+            }
+        }
 
+        if(countResults.first - countResults.second >= 3) {
+            finalResult = new Pair<>(finalResult.first, null);
+        }
 
+        results.clear();
+        return finalResult;
+    }
 
 }
 

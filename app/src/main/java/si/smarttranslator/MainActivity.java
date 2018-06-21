@@ -1,17 +1,14 @@
 package si.smarttranslator;
 
 import android.annotation.SuppressLint;
-import android.media.AudioFormat;
-import android.media.AudioRecord;
-import android.media.MediaRecorder;
 import android.os.Build;
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
+import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 import android.widget.ImageButton;
+import android.widget.TextView;
 
 import org.tensorflow.contrib.android.TensorFlowInferenceInterface;
 
@@ -26,6 +23,9 @@ public class MainActivity extends AppCompatActivity {
     private Recorder recorder;
     private Recognizer recognizer;
 
+
+
+
     @SuppressLint("ClickableViewAccessibility")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -34,21 +34,19 @@ public class MainActivity extends AppCompatActivity {
         // Start the recording and recognition threads.
         requestMicrophonePermission();
 
-
         recorder = new Recorder(LOG_TAG);
 
         // Load the TensorFlow model.
         TensorFlowInferenceInterface inferenceInterface = new TensorFlowInferenceInterface(getAssets(), TranslatorValues.MODEL_FILENAME);
         String actualFilename = TranslatorValues.LABEL_FILENAME.split("file:///android_asset/")[1];
         try {
-            recognizer = new Recognizer(LOG_TAG,new BufferedReader(new InputStreamReader(getAssets().open(actualFilename))),inferenceInterface);
+            recognizer = new Recognizer(LOG_TAG, new BufferedReader(new InputStreamReader(getAssets().open(actualFilename))), inferenceInterface);
         } catch (IOException e) {
             e.printStackTrace();
         }
 
         handleVoiceButton();
     }
-
 
 
     @SuppressLint("ClickableViewAccessibility")
@@ -60,17 +58,34 @@ public class MainActivity extends AppCompatActivity {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
                     handleButtonClicked();
                 } else if (event.getAction() == MotionEvent.ACTION_UP) {
-                    handleButtonRealesed();
+                    handleButtonRealised();
                 }
                 return true;
             }
         });
     }
 
-    private void handleButtonRealesed() {
+    private void handleButtonRealised() {
         micButton.setImageResource(R.drawable.mic_off);
         recognizer.stopRecognition();
         recorder.stopRecording();
+
+        Pair<String, String> recognizedText = recognizer.getResults();
+        if(!recognizedText.equals("_unknown_")) {
+            TextView textRecognizedField = findViewById(R.id.text_recognized);
+            TextView textTranslatedField =  findViewById(R.id.text_translated);
+
+            if(!recognizedText.second.equals(null)) {
+                //POPOUT
+
+            }
+
+            textRecognizedField.setText(recognizedText.first);
+            Translator translator = new Translator();
+            System.out.println(translator.getTranslation(recognizedText.first));
+            textTranslatedField.setText(translator.getTranslation(recognizedText.first));
+        }
+        SharedDataHandler.clearBuffer();
     }
 
     private void handleButtonClicked() {
@@ -85,9 +100,6 @@ public class MainActivity extends AppCompatActivity {
                     new String[]{android.Manifest.permission.RECORD_AUDIO}, TranslatorValues.REQUEST_RECORD_AUDIO);
         }
     }
-
-
-
 
 
 }

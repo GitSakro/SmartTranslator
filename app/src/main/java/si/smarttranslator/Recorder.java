@@ -15,6 +15,7 @@ public class Recorder {
     public Recorder(String log_tag) {
         this.LOG_TAG = log_tag;
     }
+
     public synchronized void startRecording() {
         if (recordingThread != null) {
             return;
@@ -30,6 +31,7 @@ public class Recorder {
                         });
         recordingThread.start();
     }
+
     private void record() {
         android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO);
         int bufferSize = estimateBufforSize();
@@ -61,7 +63,7 @@ public class Recorder {
         int newRecordingOffset = SharedDataHandler.getRecordingOffset() + numberRead;
         int secondCopyLength = Math.max(0, newRecordingOffset - maxLength);
         int firstCopyLength = numberRead - secondCopyLength;
-        return new SampleData(numberRead,maxLength,newRecordingOffset,secondCopyLength,firstCopyLength);
+        return new SampleData(numberRead, maxLength, newRecordingOffset, secondCopyLength, firstCopyLength);
     }
 
     private int estimateBufforSize() {
@@ -90,6 +92,7 @@ public class Recorder {
         }
         return record;
     }
+
     public synchronized void stopRecording() {
         if (recordingThread == null) {
             return;

@@ -21,6 +21,30 @@
             android:text="@string/translatedTextValue"
             android:textAlignment="center"
             android:textSize="24sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:orientation="horizontal">
+
+            <TextView
+                android:id="@+id/text_recognized"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="" />
+
+            <TextView
+                android:id="@+id/text_translated"
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
+                android:layout_weight="1"
+                android:gravity="center"
+                android:text="" />
+
+        </LinearLayout>
+
     </LinearLayout>
 
     <ImageButton
@@ -29,7 +53,8 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:layout_gravity="center"
-        app:srcCompat="@drawable/mic_off"
-        android:contentDescription="@string/microphone_button" />
+        android:layout_weight="1"
+        android:contentDescription="@string/microphone_button"
+        app:srcCompat="@drawable/mic_off" />
 
 </RelativeLayout>

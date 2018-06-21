@@ -1,6 +1,6 @@
 package si.smarttranslator;
 
-public class SampleData{
+public class SampleData {
     public int numberRead;
     public int maxLength;
     public int newRecordingOffset;

@@ -36,4 +36,10 @@ public class SharedDataHandler {
     public static int getRecordingOffset(){
         return recordingOffset;
     }
+    public static void clearBuffer(){
+        recordingBufferLock.lock();
+        recordingBuffer = new short[TranslatorValues.RECORDING_LENGTH];
+        recordingOffset = 0;
+        recordingBufferLock.unlock();
+    }
 }
